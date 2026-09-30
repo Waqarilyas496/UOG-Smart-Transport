@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using UOGTransport.API.Data;
 using UOGTransport.API.DTOs;
 using UOGTransport.API.Enums;
@@ -24,13 +27,11 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
     {
-        // Check if email already exists
         if (await _db.Users.AnyAsync(u => u.Email == request.Email))
         {
             return BadRequest(new { message = "Email is already registered." });
         }
 
-        // Role-specific validation
         if (request.Role == UserRole.Student &&
             (string.IsNullOrWhiteSpace(request.RollNumber) || string.IsNullOrWhiteSpace(request.Batch)))
         {
@@ -42,7 +43,6 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "LicenseNumber is required for Driver role." });
         }
 
-        // Create the base User
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -55,7 +55,6 @@ public class AuthController : ControllerBase
 
         _db.Users.Add(user);
 
-        // Create the role-specific record
         if (request.Role == UserRole.Student)
         {
             _db.Students.Add(new Student
@@ -117,5 +116,23 @@ public class AuthController : ControllerBase
             Email = user.Email,
             Role = user.Role.ToString()
         });
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public IActionResult Me()
+    {
+        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        var email = User.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        return Ok(new { userId, email, role, message = "Token is valid!" });
+    }
+
+    [HttpGet("admin-only")]
+    [Authorize(Roles = "TransportAdmin,SuperAdmin")]
+    public IActionResult AdminOnly()
+    {
+        return Ok(new { message = "You are an admin! This endpoint is restricted." });
     }
 }
