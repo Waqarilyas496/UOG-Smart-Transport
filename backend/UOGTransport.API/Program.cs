@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using UOGTransport.API.Data;
 using UOGTransport.API.Services;
+using UOGTransport.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +51,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // JWT Service
 builder.Services.AddScoped<JwtService>();
 
+// SignalR
+builder.Services.AddSignalR();
+
+// CORS (allows browser-based clients like our test page or future web/mobile apps to connect)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // JWT Authentication
 var jwtSecret = builder.Configuration["Jwt:Secret"]!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -65,6 +81,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -84,10 +114,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<TrackingHub>("/hubs/tracking");
 
 var summaries = new[]
 {

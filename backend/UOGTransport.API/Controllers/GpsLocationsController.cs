@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using UOGTransport.API.Data;
 using UOGTransport.API.DTOs;
 using UOGTransport.API.Enums;
+using UOGTransport.API.Hubs;
 using UOGTransport.API.Models;
 
 namespace UOGTransport.API.Controllers;
@@ -15,10 +17,12 @@ namespace UOGTransport.API.Controllers;
 public class GpsLocationsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IHubContext<TrackingHub> _hubContext;
 
-    public GpsLocationsController(AppDbContext db)
+    public GpsLocationsController(AppDbContext db, IHubContext<TrackingHub> hubContext)
     {
         _db = db;
+        _hubContext = hubContext;
     }
 
     private static GpsLocationResponse ToResponse(GpsLocation g) => new()
@@ -81,7 +85,12 @@ public class GpsLocationsController : ControllerBase
         _db.GpsLocations.Add(location);
         await _db.SaveChangesAsync();
 
-        return Ok(ToResponse(location));
+        var response = ToResponse(location);
+
+        // Broadcast to all clients subscribed to this trip's group
+        await _hubContext.Clients.Group($"trip-{tripId}").SendAsync("ReceiveLocation", response);
+
+        return Ok(response);
     }
 
     // GET /api/trips/{tripId}/gpslocations - anyone logged in can view a trip's GPS history
