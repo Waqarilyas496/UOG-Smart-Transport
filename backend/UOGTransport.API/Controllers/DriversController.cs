@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UOGTransport.API.Data;
 using UOGTransport.API.DTOs;
+using UOGTransport.API.Enums;
 
 namespace UOGTransport.API.Controllers;
 
@@ -16,6 +17,45 @@ public class DriversController : ControllerBase
     public DriversController(AppDbContext db)
     {
         _db = db;
+    }
+
+    // GET /api/drivers/me - the logged-in driver's own profile + assigned bus/route
+    [HttpGet("me")]
+    [Authorize(Roles = "Driver")]
+    public async Task<ActionResult<DriverMeResponse>> GetMe()
+    {
+        var userIdClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var driver = await _db.Drivers
+            .Include(d => d.User)
+            .Include(d => d.AssignedBus).ThenInclude(b => b!.Route)
+            .FirstOrDefaultAsync(d => d.UserId == userId);
+
+        if (driver == null)
+        {
+            return NotFound(new { message = "Driver profile not found for this account." });
+        }
+
+        var activeTrip = await _db.Trips
+            .Where(t => t.DriverId == driver.Id && t.Status == TripStatus.Active)
+            .Select(t => (Guid?)t.Id)
+            .FirstOrDefaultAsync();
+
+        return Ok(new DriverMeResponse
+        {
+            DriverId = driver.Id,
+            FullName = driver.User!.FullName,
+            LicenseNumber = driver.LicenseNumber,
+            BusId = driver.AssignedBusId,
+            BusNumber = driver.AssignedBus?.BusNumber,
+            RouteId = driver.AssignedBus?.RouteId,
+            RouteName = driver.AssignedBus?.Route?.RouteName,
+            ActiveTripId = activeTrip
+        });
     }
 
     // GET /api/drivers - any logged-in user can view

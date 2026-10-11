@@ -65,3 +65,61 @@ export function register(payload: RegisterPayload): Promise<AuthResponse> {
     body: JSON.stringify(payload),
   });
 }
+export type DriverMe = {
+  driverId: string;
+  fullName: string;
+  licenseNumber: string;
+  busId: string | null;
+  busNumber: string | null;
+  routeId: string | null;
+  routeName: string | null;
+  activeTripId: string | null;
+};
+
+export type Trip = {
+  id: string;
+  busNumber: string;
+  routeName: string;
+  status: string;
+};
+
+function authHeaders(token: string) {
+  return { Authorization: `Bearer ${token}` };
+}
+
+export function getDriverMe(token: string): Promise<DriverMe> {
+  return request<DriverMe>('/api/Drivers/me', { headers: authHeaders(token) });
+}
+
+export function startTrip(token: string, busId: string, routeId: string): Promise<Trip> {
+  return request<Trip>('/api/Trips/start', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ busId, routeId }),
+  });
+}
+
+export function endTrip(token: string, tripId: string): Promise<void> {
+  return request<void>(`/api/Trips/${tripId}/end`, {
+    method: 'POST',
+    headers: authHeaders(token),
+  });
+}
+
+export function sendLocation(
+  token: string,
+  tripId: string,
+  data: {
+    latitude: number;
+    longitude: number;
+    speed: number | null;
+    heading: number | null;
+    recordedAt: string;
+  }
+): Promise<unknown> {
+  return request(`/api/trips/${tripId}/gpslocations`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+}
