@@ -46,3 +46,22 @@ export function login(payload: LoginPayload): Promise<AuthResponse> {
     body: JSON.stringify(payload),
   });
 }
+export type RegisterPayload = {
+  fullName: string;
+  email: string;
+  password: string;
+  role: 'Student' | 'Driver';
+  phoneNumber?: string;
+  rollNumber?: string;
+  batch?: string;
+  department?: string;
+  semester?: number;
+  licenseNumber?: string;
+};
+
+export function register(payload: RegisterPayload): Promise<AuthResponse> {
+  return request<AuthResponse>('/api/Auth/register', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppInput } from '@/components/app-input';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -59,16 +60,14 @@ export default function LoginScreen() {
           {role} Login
         </ThemedText>
 
-        <TextInput
-          style={styles.input}
+        <AppInput
           placeholder="Email"
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
         />
-        <TextInput
-          style={styles.input}
+        <AppInput
           placeholder="Password"
           secureTextEntry
           value={password}
@@ -104,16 +103,9 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   title: { textAlign: 'center', marginBottom: Spacing.three },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: Spacing.two,
-    padding: Spacing.three,
-    fontSize: 16,
-  },
   button: {
     backgroundColor: '#2563eb',
-    borderRadius: Spacing.two,
+    borderRadius: 8,
     padding: Spacing.three,
     alignItems: 'center',
     marginTop: Spacing.two,
