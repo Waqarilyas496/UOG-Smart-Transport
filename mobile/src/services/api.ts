@@ -123,3 +123,19 @@ export function sendLocation(
     body: JSON.stringify(data),
   });
 }
+export type LiveBus = {
+  hasRoute: boolean;
+  routeName: string | null;
+  hasActiveTrip: boolean;
+  tripId: string | null;
+  busNumber: string | null;
+  driverName: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  speed: number | null;
+  recordedAt: string | null;
+};
+
+export function getLiveBus(token: string): Promise<LiveBus> {
+  return request<LiveBus>('/api/students/me/live', { headers: authHeaders(token) });
+}
