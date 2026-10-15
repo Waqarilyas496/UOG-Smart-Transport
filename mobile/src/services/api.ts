@@ -139,3 +139,52 @@ export type LiveBus = {
 export function getLiveBus(token: string): Promise<LiveBus> {
   return request<LiveBus>('/api/students/me/live', { headers: authHeaders(token) });
 }
+export type BusItem = {
+  id: string;
+  busNumber: string;
+  capacity: number;
+  status: string;
+  routeName: string | null;
+};
+
+export type RouteItem = {
+  id: string;
+  routeName: string;
+  startPoint: string;
+  endPoint: string;
+  isActive: boolean;
+};
+
+export type DriverItem = {
+  id: string;
+  fullName: string;
+  email: string;
+  licenseNumber: string;
+  assignedBusNumber: string | null;
+};
+
+export type TripItem = {
+  id: string;
+  busNumber: string;
+  driverName: string;
+  routeName: string;
+  startTime: string;
+  endTime: string | null;
+  status: string;
+};
+
+export function getBuses(token: string): Promise<BusItem[]> {
+  return request<BusItem[]>('/api/Buses', { headers: authHeaders(token) });
+}
+
+export function getRoutes(token: string): Promise<RouteItem[]> {
+  return request<RouteItem[]>('/api/Routes', { headers: authHeaders(token) });
+}
+
+export function getDrivers(token: string): Promise<DriverItem[]> {
+  return request<DriverItem[]>('/api/Drivers', { headers: authHeaders(token) });
+}
+
+export function getTrips(token: string): Promise<TripItem[]> {
+  return request<TripItem[]>('/api/Trips', { headers: authHeaders(token) });
+}
